@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Vinyl Collection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <h1>&#9679; Vinyl</h1>
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="search" id="search" placeholder="Search artist, title, genre…" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="genre-bar" id="genreBar">
+      <button class="genre-btn active" data-genre="all">All</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <p id="loaderText">Loading collection…</p>
+    </div>
+    <div class="error-state" id="errorState" style="display:none">
+      <div class="error-icon">&#9671;</div>
+      <h2 id="errorTitle">Username not set</h2>
+      <p id="errorMsg">Open <code>index.html</code> and set <code>DISCOGS_USERNAME</code> at the top of the script.</p>
+    </div>
+    <div class="grid" id="grid" style="display:none"></div>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <p>No records match your search.</p>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&#10005;</button>
+      <div class="modal-art">
+        <img id="modalImg" src="" alt="">
+      </div>
+      <div class="modal-info">
+        <p class="modal-artist" id="modalArtist"></p>
+        <h2 class="modal-title" id="modalTitle"></h2>
+        <div class="modal-meta" id="modalMeta"></div>
+        <div class="modal-tags" id="modalTags"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
