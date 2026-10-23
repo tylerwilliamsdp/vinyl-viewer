@@ -6,7 +6,7 @@ const DISCOGS_USERNAME = 'tylerwilliamsdp';
 
 const API_BASE   = 'https://api.discogs.com';
 const HEADERS    = { 'User-Agent': 'VinylViewer/1.0' };
-const CACHE_KEY  = `vinyl-cache-v2-${DISCOGS_USERNAME}`;
+const CACHE_KEY  = `vinyl-cache-v3-${DISCOGS_USERNAME}`;
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours
 
 // ── State ──────────────────────────────────────────────────
@@ -98,19 +98,24 @@ function normalize(release) {
   };
 }
 
+// Strip leading "The ", "A ", "An " for sort purposes
+function sortKey(str) {
+  return str.replace(/^(the |a |an )/i, '').trim();
+}
+
 // ── Sort ───────────────────────────────────────────────────
 function sortRecords(records) {
   const sorted = [...records];
   if (activeSort === 'artist') {
-    sorted.sort((a, b) => a.artist.localeCompare(b.artist));
+    sorted.sort((a, b) => sortKey(a.artist).localeCompare(sortKey(b.artist)));
   } else if (activeSort === 'title') {
-    sorted.sort((a, b) => a.title.localeCompare(b.title));
+    sorted.sort((a, b) => sortKey(a.title).localeCompare(sortKey(b.title)));
   } else if (activeSort === 'year-asc') {
     sorted.sort((a, b) => (a.year || 9999) - (b.year || 9999));
   } else if (activeSort === 'year-desc') {
     sorted.sort((a, b) => (b.year || 0) - (a.year || 0));
   } else if (activeSort === 'recent') {
-    sorted.sort((a, b) => b.added.localeCompare(a.added));
+    sorted.sort((a, b) => (b.added || '').localeCompare(a.added || ''));
   }
   return sorted;
 }
