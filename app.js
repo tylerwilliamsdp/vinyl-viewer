@@ -6,7 +6,7 @@ const DISCOGS_USERNAME = 'tylerwilliamsdp';
 
 const API_BASE   = 'https://api.discogs.com';
 const HEADERS    = { 'User-Agent': 'VinylViewer/1.0' };
-const CACHE_KEY  = `vinyl-cache-v4-${DISCOGS_USERNAME}`;
+const CACHE_KEY  = `vinyl-cache-v5-${DISCOGS_USERNAME}`;
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours
 
 // ── State ──────────────────────────────────────────────────
@@ -93,9 +93,15 @@ function normalize(release) {
     labels:  (bi.labels || []).map(l => l.name),
     genres:  bi.genres  || [],
     styles:  bi.styles  || [],
-    cover:   bi.cover_image || bi.thumb || '',
+    cover:   hiRes(bi.cover_image || bi.thumb || ''),
     thumb:   bi.thumb || bi.cover_image || '',
   };
+}
+
+// Upscale Discogs proxy image URLs from 600px to 1000px
+function hiRes(url) {
+  if (!url) return url;
+  return url.replace(/\/h:\d+\/w:\d+\//, '/h:1000/w:1000/').replace(/\/q:\d+\//, '/q:90/');
 }
 
 // Strip leading "The ", "A ", "An " for sort purposes
