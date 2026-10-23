@@ -88,6 +88,10 @@ function buildGenreBar(records) {
     .sort((a, b) => b[1] - a[1])
     .map(([g]) => g);
 
+  // Wire up the static "All" button in the HTML
+  const allBtn = genreBar.querySelector('[data-genre="all"]');
+  if (allBtn) allBtn.addEventListener('click', () => setGenre('all', allBtn));
+
   sorted.forEach(genre => {
     const btn = document.createElement('button');
     btn.className = 'genre-btn';
