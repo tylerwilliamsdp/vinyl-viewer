@@ -251,9 +251,11 @@ genreBar.addEventListener('click', e => {
 });
 
 // Sort
-sortSelect.addEventListener('change', e => {
-  activeSort = e.target.value;
-  applyFilters();
+document.addEventListener('change', e => {
+  if (e.target.id === 'sortSelect') {
+    activeSort = e.target.value;
+    applyFilters();
+  }
 });
 
 // ── Search ─────────────────────────────────────────────────
