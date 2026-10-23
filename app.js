@@ -88,16 +88,11 @@ function buildGenreBar(records) {
     .sort((a, b) => b[1] - a[1])
     .map(([g]) => g);
 
-  // Wire up the static "All" button in the HTML
-  const allBtn = genreBar.querySelector('[data-genre="all"]');
-  if (allBtn) allBtn.addEventListener('click', () => setGenre('all', allBtn));
-
   sorted.forEach(genre => {
     const btn = document.createElement('button');
     btn.className = 'genre-btn';
     btn.dataset.genre = genre;
     btn.textContent = genre;
-    btn.addEventListener('click', () => setGenre(genre, btn));
     genreBar.appendChild(btn);
   });
 }
@@ -195,6 +190,13 @@ function closeModal() {
 modalClose.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Genre bar — use event delegation so All and dynamic buttons always work
+genreBar.addEventListener('click', e => {
+  const btn = e.target.closest('.genre-btn');
+  if (!btn) return;
+  setGenre(btn.dataset.genre, btn);
+});
 
 // ── Search ─────────────────────────────────────────────────
 searchInput.addEventListener('input', e => {
