@@ -4,14 +4,17 @@
 const DISCOGS_USERNAME = 'tylerwilliamsdp';
 // ─────────────────────────────────────────────────────────
 
-const API_BASE = 'https://api.discogs.com';
-const HEADERS  = { 'User-Agent': 'VinylViewer/1.0' };
+const API_BASE   = 'https://api.discogs.com';
+const HEADERS    = { 'User-Agent': 'VinylViewer/1.0' };
+const CACHE_KEY  = `vinyl-cache-${DISCOGS_USERNAME}`;
+const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours
 
 // ── State ──────────────────────────────────────────────────
 let allRecords   = [];
 let filteredRecs = [];
 let activeGenre  = 'all';
 let searchQuery  = '';
+let activeSort   = 'artist';
 
 // ── DOM refs ───────────────────────────────────────────────
 const loader       = document.getElementById('loader');
@@ -23,6 +26,7 @@ const gridEl       = document.getElementById('grid');
 const emptyState   = document.getElementById('emptyState');
 const genreBar     = document.getElementById('genreBar');
 const searchInput  = document.getElementById('search');
+const sortSelect   = document.getElementById('sortSelect');
 const modalOverlay = document.getElementById('modalOverlay');
 const modalClose   = document.getElementById('modalClose');
 const modalImg     = document.getElementById('modalImg');
@@ -31,6 +35,23 @@ const modalTitle   = document.getElementById('modalTitle');
 const modalMeta    = document.getElementById('modalMeta');
 const modalTags    = document.getElementById('modalTags');
 
+// ── Cache ──────────────────────────────────────────────────
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    return data;
+  } catch { return null; }
+}
+
+function saveCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+  } catch {}
+}
+
 // ── Fetch all pages ────────────────────────────────────────
 async function fetchCollection(username) {
   const releases = [];
@@ -38,7 +59,7 @@ async function fetchCollection(username) {
   let totalPages = 1;
 
   while (page <= totalPages) {
-    const url = `${API_BASE}/users/${username}/collection/folders/0/releases?sort=artist&per_page=100&page=${page}`;
+    const url = `${API_BASE}/users/${username}/collection/folders/0/releases?sort=added&sort_order=desc&per_page=100&page=${page}`;
     const res = await fetch(url, { headers: HEADERS });
 
     if (res.status === 404) throw new Error('User not found. Check your Discogs username.');
@@ -52,7 +73,6 @@ async function fetchCollection(username) {
     loaderText.textContent = `Loading… ${releases.length} of ${data.pagination.items} records`;
     page++;
 
-    // Respect rate limit — small delay between pages
     if (page <= totalPages) await sleep(300);
   }
 
@@ -69,12 +89,30 @@ function normalize(release) {
     title:   bi.title,
     artist:  bi.artists.map(a => a.name.replace(/ \(\d+\)$/, '')).join(', '),
     year:    bi.year || null,
+    added:   release.date_added || '',
     labels:  (bi.labels || []).map(l => l.name),
     genres:  bi.genres  || [],
     styles:  bi.styles  || [],
     cover:   bi.cover_image || bi.thumb || '',
     thumb:   bi.thumb || bi.cover_image || '',
   };
+}
+
+// ── Sort ───────────────────────────────────────────────────
+function sortRecords(records) {
+  const sorted = [...records];
+  if (activeSort === 'artist') {
+    sorted.sort((a, b) => a.artist.localeCompare(b.artist));
+  } else if (activeSort === 'title') {
+    sorted.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (activeSort === 'year-asc') {
+    sorted.sort((a, b) => (a.year || 9999) - (b.year || 9999));
+  } else if (activeSort === 'year-desc') {
+    sorted.sort((a, b) => (b.year || 0) - (a.year || 0));
+  } else if (activeSort === 'recent') {
+    sorted.sort((a, b) => b.added.localeCompare(a.added));
+  }
+  return sorted;
 }
 
 // ── Build genre buttons ────────────────────────────────────
@@ -104,7 +142,7 @@ function setGenre(genre, btn) {
   applyFilters();
 }
 
-// ── Filtering ──────────────────────────────────────────────
+// ── Filtering + Sorting ────────────────────────────────────
 function applyFilters() {
   const q = searchQuery.toLowerCase();
 
@@ -115,7 +153,7 @@ function applyFilters() {
     return genreMatch && searchMatch;
   });
 
-  renderGrid(filteredRecs);
+  renderGrid(sortRecords(filteredRecs));
 }
 
 // ── Render grid ────────────────────────────────────────────
@@ -160,16 +198,24 @@ function renderGrid(records) {
   });
 }
 
-// ── Modal ──────────────────────────────────────────────────
+// ── Modal (Now Playing style) ──────────────────────────────
 function openModal(r) {
   modalImg.src = r.cover || r.thumb || '';
   modalImg.alt = r.title;
+
+  // Color backdrop from album art
+  modalOverlay.style.backgroundImage = r.cover
+    ? `linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.92) 60%), url(${escHtml(r.cover)})`
+    : '';
+  modalOverlay.style.backgroundSize = 'cover';
+  modalOverlay.style.backgroundPosition = 'center';
+
   modalArtist.textContent = r.artist;
   modalTitle.textContent  = r.title;
 
   const metaParts = [];
-  if (r.year)              metaParts.push(`<span><strong>Year</strong>  ${r.year}</span>`);
-  if (r.labels.length)     metaParts.push(`<span><strong>Label</strong>  ${escHtml(r.labels.join(', '))}</span>`);
+  if (r.year)          metaParts.push(`<span><strong>Year</strong>  ${r.year}</span>`);
+  if (r.labels.length) metaParts.push(`<span><strong>Label</strong>  ${escHtml(r.labels.join(', '))}</span>`);
   modalMeta.innerHTML = metaParts.join('');
 
   const tags = [
@@ -184,6 +230,7 @@ function openModal(r) {
 
 function closeModal() {
   modalOverlay.style.display = 'none';
+  modalOverlay.style.backgroundImage = '';
   document.body.style.overflow = '';
 }
 
@@ -191,11 +238,17 @@ modalClose.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// Genre bar — use event delegation so All and dynamic buttons always work
+// Genre bar — event delegation
 genreBar.addEventListener('click', e => {
   const btn = e.target.closest('.genre-btn');
   if (!btn) return;
   setGenre(btn.dataset.genre, btn);
+});
+
+// Sort
+sortSelect.addEventListener('change', e => {
+  activeSort = e.target.value;
+  applyFilters();
 });
 
 // ── Search ─────────────────────────────────────────────────
@@ -230,6 +283,18 @@ async function init() {
   }
 
   try {
+    // Try cache first
+    const cached = loadCache();
+    if (cached) {
+      loaderText.textContent = 'Loading from cache…';
+      allRecords = cached;
+      buildGenreBar(allRecords);
+      loader.style.display = 'none';
+      filteredRecs = [...allRecords];
+      renderGrid(sortRecords(filteredRecs));
+      return;
+    }
+
     const releases = await fetchCollection(DISCOGS_USERNAME);
 
     if (releases.length === 0) {
@@ -237,15 +302,14 @@ async function init() {
       return;
     }
 
-    allRecords = releases.map(normalize).sort((a, b) =>
-      a.artist.localeCompare(b.artist)
-    );
+    allRecords = releases.map(normalize);
+    saveCache(allRecords);
 
     buildGenreBar(allRecords);
 
     loader.style.display = 'none';
     filteredRecs = [...allRecords];
-    renderGrid(filteredRecs);
+    renderGrid(sortRecords(filteredRecs));
 
   } catch (err) {
     showError('Failed to load collection', escHtml(err.message));

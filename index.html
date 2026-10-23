@@ -20,8 +20,19 @@
         <input type="search" id="search" placeholder="Search artist, title, genre…" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
     </div>
-    <div class="genre-bar" id="genreBar">
-      <button class="genre-btn active" data-genre="all">All</button>
+    <div class="controls-bar">
+      <div class="genre-bar" id="genreBar">
+        <button class="genre-btn active" data-genre="all">All</button>
+      </div>
+      <div class="sort-wrap">
+        <select id="sortSelect">
+          <option value="artist">Artist A–Z</option>
+          <option value="title">Title A–Z</option>
+          <option value="year-desc">Newest first</option>
+          <option value="year-asc">Oldest first</option>
+          <option value="recent">Recently added</option>
+        </select>
+      </div>
     </div>
   </header>
 
