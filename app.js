@@ -6,7 +6,7 @@ const DISCOGS_USERNAME = 'tylerwilliamsdp';
 
 const API_BASE   = 'https://api.discogs.com';
 const HEADERS    = { 'User-Agent': 'VinylViewer/1.0' };
-const CACHE_KEY  = `vinyl-cache-v3-${DISCOGS_USERNAME}`;
+const CACHE_KEY  = `vinyl-cache-v4-${DISCOGS_USERNAME}`;
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours
 
 // ── State ──────────────────────────────────────────────────
@@ -179,8 +179,8 @@ function renderGrid(records) {
     card.className = 'card';
     card.innerHTML = `
       <div class="card-art">
-        ${r.thumb
-          ? `<img src="${escHtml(r.thumb)}" alt="${escHtml(r.title)}" loading="lazy" class="loading">`
+        ${r.cover || r.thumb
+          ? `<img src="${escHtml(r.cover || r.thumb)}" alt="${escHtml(r.title)}" loading="lazy" class="loading">`
           : `<div class="card-placeholder">&#9679;</div>`}
       </div>
       <div class="card-body">
